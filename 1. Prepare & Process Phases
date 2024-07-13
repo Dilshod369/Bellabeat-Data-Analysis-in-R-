@@ -56,84 +56,59 @@ str(daily_activity)
 # ----------------
 
 # Transforming datatype of 'ActivityDate' column and creating 'month', 'day', & 'time' from it
-# daily_activity 1
-# Convert 'ActivityDate' column to date time format and split to date and time.
-daily_activity$ActivityDate=as.POSIXct(daily_activity$ActivityDate, format="%m/%d/%Y", tz=Sys.timezone())
-daily_activity$date <- format(daily_activity$ActivityDate, format = "%m/%d/%y")
-daily_activity$ActivityDate=as.Date(daily_activity$ActivityDate, format="%m/%d/%Y", tz=Sys.timezone())
-daily_activity$date=as.Date(daily_activity$date, format="%m/%d/%Y")
 
-# daily_activity 2
+# daily_activity
 # Mutate ActivtyHour data type to date / time and create new time, date, month, and weekday columns in df
 daily_activity$ActivityDate=as.POSIXct(daily_activity$ActivityDate, format="%m/%d/%Y", tz=Sys.timezone())
 daily_activity$date <- format(daily_activity$ActivityDate, format = "%m/%d/%y")
 daily_activity$month <- format(daily_activity$ActivityDate, format = "%B")
-daily_activity$day <- format(daily_activity$ActivityDate, format = "%d")
-daily_activity$weekday <- format(daily_activity$ActivityDate, format = "%A")
+daily_activity$weekday <- wday(daily_activity$ActivityDate, label = TRUE)
 
 # daily_calories
 # Mutate ActivtyHour data type to date / time and create new time, date, month, and weekday columns in df
 daily_calories$ActivityDay=as.POSIXct(daily_calories$ActivityDay, format="%m/%d/%Y", tz=Sys.timezone())
-daily_calories$month <- format(daily_calories$ActivityDay, format = "%B")
-daily_calories$day <- format(daily_calories$ActivityDay, format = "%d")
-daily_calories$weekday <- format(daily_calories$ActivityDay, format = "%A")
+# if you wanna calculate monthly trends then create a new column 'month' in all df
+daily_calories$month <- format(daily_calories$ActivityDay, format = "%B") 
+daily_calories$weekday <- wday(daily_calories$ActivityDay, label = TRUE)
 
 # daily_intensities
 # Mutate ActivtyHour data type to date / time and create new time, date, and month columns in df
 daily_intensities$ActivityDay=as.POSIXct(daily_intensities$ActivityDay, format="%m/%d/%Y", tz=Sys.timezone())
-daily_intensities$month <- format(daily_intensities$ActivityDay, format = "%B")
-daily_intensities$day <- format(daily_intensities$ActivityDay, format = "%d")
-daily_intensities$weekday <- format(daily_intensities$ActivityDay, format = "%A")
+daily_intensities$weekday <- wday(daily_intensities$ActivityDay, label = TRUE)
 
 # daily_steps
 # Mutate ActivtyHour data type to date / time and create new time, date, and month columns in df
 daily_steps$ActivityDay=as.POSIXct(daily_steps$ActivityDay, format="%m/%d/%Y", tz=Sys.timezone())
-daily_steps$month <- format(daily_steps$ActivityDay, format = "%B")
-daily_steps$day <- format(daily_steps$ActivityDay, format = "%d")
-daily_steps$weekday <- format(daily_steps$ActivityDay, format = "%A")
-
-# hourly_activity - didn't finish - X
-# Mutate ActivtyHour data type to date / time and create new time, date, and month columns in df
-hourly_activity$ActivityHour=as.POSIXct(hourly_activity$ActivityHour, format="%m/%d/%Y %I:%M", tz=Sys.timezone())
-hourly_activity$hour <- format(hourly_activity$ActivityHour, format = "%H")
-hourly_activity$date <- format(hourly_activity$ActivityHour, format = "%m/%d/%y")
-hourly_activity$month <- format(hourly_activity$ActivityHour, format = "%B")
+daily_steps$weekday <- wday(daily_steps$ActivityDay, label = TRUE)
 
 # hourly_calories
 # Mutate ActivtyHour data type to date / time and create new time, date, and month columns in df
 hourly_calories$ActivityHour=as.POSIXct(hourly_calories$ActivityHour, format="%m/%d/%Y %I:%M:%S %p", tz=Sys.timezone())
 hourly_calories$time <- format(hourly_calories$ActivityHour, format = "%H:%M:%S")
-hourly_calories$date <- format(hourly_calories$ActivityHour, format = "%m/%d/%y")
 hourly_calories$month <- format(hourly_calories$ActivityHour, format = "%B")
 
 # hourly_intensities
 # Mutate ActivtyHour data type to date / time and create new time, date, and month columns in df
 hourly_intensities$ActivityHour=as.POSIXct(hourly_intensities$ActivityHour, format="%m/%d/%Y %I:%M:%S %p", tz=Sys.timezone())
 hourly_intensities$time <- format(hourly_intensities$ActivityHour, format = "%H:%M:%S")
-hourly_intensities$date <- format(hourly_intensities$ActivityHour, format = "%m/%d/%y")
-hourly_intensities$month <- format(hourly_intensities$ActivityHour, format = "%B")
-
 
 # heart_rate
 # Mutate Time data type to date / time and create new time, date, and month columns in df
 heart_rate$Time=as.POSIXct(heart_rate$Time, format="%m/%d/%Y %I:%M:%S %p", tz=Sys.timezone())
 heart_rate$date <- format(heart_rate$Time, format = "%m/%d/%y")
 heart_rate$time <- format(heart_rate$Time, format = "%H")
-heart_rate$month <- format(heart_rate$Time, format = "%B")
 
 # sleep_day
 # Mutate SleepDay data type to date / time and create new date and month columns in df
 sleep_day$SleepDay=as.POSIXct(sleep_day$SleepDay, format="%m/%d/%Y %I:%M:%S %p", tz=Sys.timezone())
 sleep_day$date <- format(sleep_day$SleepDay, format = "%m/%d/%y")
 sleep_day$month <- format(sleep_day$SleepDay, format = "%B")
-sleep_day$weekday <- format(sleep_day$SleepDay, format = "%A")
+sleep_day$weekday <- wday(sleep_day$SleepDay, label = TRUE)
 
 # weight_log
 # Mutate Date data type to date / time and create new time, date, and month columns in df
 weight_log$Date=as.POSIXct(weight_log$Date, format="%m/%d/%Y %I:%M:%S %p", tz=Sys.timezone())
 weight_log$date <- format(weight_log$Date, format = "%m/%d/%y")
-weight_log$time <- format(weight_log$Date, format = "%H:%M:%S")
-weight_log$month <- format(weight_log$Date, format = "%B")
 
 
 # Let’s look at the total number of participants in each data sets:
