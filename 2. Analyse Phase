@@ -1,0 +1,477 @@
+
+# --------------
+# ANALYZE Phase 
+# --------------
+
+# SUMMARIES
+# Here are some quick summary statistics about each data frame.
+
+# Summary of daily total steps, total distance walked, and number of sedentary minutes
+daily_activity %>%
+  select(TotalSteps,
+         TotalDistance,
+         SedentaryMinutes, Calories) %>%
+  summary()
+
+# Summary of sleep day 
+sleep_day %>%
+  select(TotalMinutesAsleep,
+         TotalTimeInBed) %>%
+  summary()
+
+# Explore the number of active minutes per category
+daily_intensities %>%
+  select(VeryActiveMinutes, FairlyActiveMinutes, LightlyActiveMinutes, SedentaryMinutes) %>%
+  summary()
+
+# Summary of number of calories burned per day
+daily_calories %>%
+  select(Calories) %>%
+  summary()
+
+# Summary of number of calories burned per hour
+hourly_calories %>%
+  select(Calories) %>%
+  summary()
+
+# Summary of heart rate BPM
+heart_rate %>%  
+  select(Value) %>%
+  summary()
+
+# Summary of daily total minutes asleep and total time in bed (60 minutes = 1 hour)
+sleep_day %>%
+  select(TotalSleepRecords, TotalMinutesAsleep, TotalTimeInBed) %>%
+  summary()
+
+# Summary of weight in Kg and BMI
+weight_log %>%  
+  select(WeightKg,
+         BMI) %>%
+  summary()
+
+# checking for significant change in weight
+weight_log%>%
+  group_by(Id)%>%
+  summarise(min(WeightKg),max(WeightKg))
+
+# -----------------------
+# Weekly Trends in Activity and Sleep Patterns
+# Create new df with average weekday activity, grouped by the 'weekday', and na values dropped
+weekday_activity <- daily_activity %>%
+  group_by(weekday) %>%
+  drop_na() %>%
+  summarise(avg_total_steps = mean(TotalSteps),
+            avg_total_dist = mean(TotalDistance),
+            avg_veryact_min = mean(VeryActiveMinutes),
+            avg_seden_min = mean(SedentaryMinutes),
+            avg_calories = mean(Calories))
+
+# Duplicate a column in the above df with the name 'mean_total_sleep'
+weekday_activity$mean_total_sleep <- weekday_activity$weekday
+
+# Create new df with average weekday sleep (in hours), grouped by the 'weekday', and na values dropped
+weekday_sleep <- sleep_day %>%
+  group_by(weekday) %>%
+  drop_na() %>%
+  summarise(mean_total_sleep = mean(TotalMinutesAsleep)/60)
+
+# Copy the values of the 'mean_total_sleep' column from 'weekday_sleep' df 
+# and paste them into the 'mean_total_sleep' column in 'weekday_activity' df
+weekday_activity$mean_total_sleep <- paste(weekday_sleep$"mean_total_sleep")
+
+# Truncate remove everything after fisrt 3 character in the 'mean_total_sleep' column
+# As the result we'll have avg sleep duration per day of week like this: 6.9; 6.7, 7.5 etc
+weekday_activity$mean_total_sleep <- substring(weekday_activity$mean_total_sleep, first=1, last=3)
+
+
+# Plot 1. Average Number of Steps by Day of Week
+ggplot(weekday_activity, aes(x = weekday, y = avg_total_steps, fill = weekday)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual("legend", values = c("Sun" = "#37B4C4", "Mon" = "#196B82", "Tue" = "#084A65",
+                                         "Wed"="#1B8498", "Thu"="#27A7B8","Fri"="#1B9AAB","Sat"="#084A65"))+
+  ggtitle("Average Number of Steps by Day of Week") +
+  xlab("Day of Week") + ylab("Average no of Steps") + 
+  theme_bw() + labs(subtitle="") +
+  theme(plot.margin = margin(0.7,0.8,0.7,0.7, "cm"),
+        axis.text = element_text(size = 20, face = "plain"), 
+        panel.border = element_rect(color = "black",
+                                    fill = NA,
+                                    size = 2),
+        panel.background = element_blank(),
+        legend.text = element_blank(), legend.position="none",
+        axis.text.x = element_text(margin = margin(t = .3, unit = "cm")), 
+        axis.title = element_text(size = 24), 
+        axis.title.y = element_text(vjust = +2.5),
+        axis.title.x = element_text(vjust = -0.70),
+        plot.title = element_text(size = 26, face = "bold"))+
+  geom_hline(yintercept = 10000, color="red") +
+  coord_cartesian(ylim=c(4000, 10000)) +
+  ylim(4000, 10000)+
+  scale_y_continuous(labels = scales::label_number(scale = 1e-3, suffix = " K"),
+                     breaks = seq(4000, 10000, 2000))
+
+
+# Before creating a plot need to change the data type of 'mean_total_sleep' to numeric
+weekday_activity$mean_total_sleep <- as.numeric(weekday_activity$mean_total_sleep)
+
+# Plot 2. Average Hours of Sleep per Day of Week
+ggplot(weekday_activity, aes(x = weekday, y = mean_total_sleep, fill = weekday)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual("legend", values = c("Mon" = "#913E92","Tue" = "#D84974",
+                                         "Wed"="#553E92", "Thu"="#D84974",
+                                         "Fri"="#D84974","Sat"="#6C3C93","Sun" = "#3C4791"))+
+  ggtitle("Average Hours of Sleep per Day of Week") +
+  xlab("Day of Week") + ylab("Average Hours of Sleep") + 
+  theme_bw() + labs(subtitle="") +
+  theme(plot.margin = margin(0.7,0.8,0.7,0.7, "cm"),
+        axis.text = element_text(size = 20, face = "plain"), 
+        panel.border = element_rect(color = "black",
+                                    fill = NA,
+                                    size = 2),
+        panel.background = element_blank(),
+        legend.text = element_blank(), legend.position="none",
+        axis.text.x = element_text(margin = margin(t = .3, unit = "cm")), 
+        axis.title = element_text(size = 24), 
+        axis.title.y = element_text(vjust = +2.5),
+        axis.title.x = element_text(vjust = -0.70),
+        plot.title = element_text(size = 26, face = "bold")) +
+  geom_hline(yintercept = 8, color="red") +
+  scale_x_discrete(labels=c("Mon","Tue","Wed","Thu","Fri","Sat","Sun")) +
+  coord_cartesian(ylim=c(6, 8)) +
+  #ylim(6, 8)+
+  scale_y_continuous(labels=c('6.5','7.0','7.5','8.0'),
+                     breaks=c(6.5,7.0,7.5,8.0))+
+  plot(daily_activity$TotalSteps, daily_activity$Calories, pch = 16)+ box(lwd=2) 
+# -------------------
+
+# Cakcukating Average of Total Intensity by Hour of Day
+# Merge daily activity and hourly intensities by id and date, and save as a new df
+d_activity_hr_intensities <- merge(daily_activity, hourly_intensities, by=c('Id', 'date'))
+glimpse(d_activity_hr_intensities)
+
+# Create new df with average intensity, grouped by the time, and na values dropped
+hourly_intensity <- d_activity_hr_intensities %>%
+  group_by(time) %>%
+  drop_na() %>%
+  summarise(mean_total_int = mean(TotalIntensity))
+
+hourly_intensity$time <- sub('^([^:]+).*', '\\1', 
+                             hourly_intensity$time)
+
+# Create new df with average intensity, grouped by the time, and na values dropped
+hourly_veryact_min <- d_activity_hr_intensities %>%
+  group_by(time) %>%
+  drop_na() %>%
+  summarise(mean_activ_min = mean(VeryActiveMinutes))
+
+hourly_veryact_min$time <- sub('^([^:]+).*', '\\1', 
+                               hourly_veryact_min$time)
+
+# Plot 3. Average of Total Intensity by Hour of Day
+ggplot(data=hourly_intensity, aes(x=time, y=mean_total_int, color=mean_total_int)) + 
+  #geom_bar(stat = "identity", fill='#27A7B8') +
+  geom_line(group=1, size=2.2) +
+  scale_colour_gradient(low = "blue", high = "orange", guide = "none") +
+  ggtitle("Average of Total Intensity by Hour of Day") +
+  xlab("Hour of Day") + ylab("Average of Total Intensity") + 
+  theme_bw() + labs(subtitle="") +
+  theme(plot.margin = margin(0.7,0.8,0.7,0.7, "cm"),
+        axis.text = element_text(size = 20, face = "plain"), 
+        panel.border = element_rect(color = "black",
+                                    fill = NA,
+                                    size = 2),
+        panel.background = element_blank(),
+        axis.text.x = element_text(margin = margin(t = .3, unit = "cm")), 
+        axis.title = element_text(size = 24), 
+        axis.title.y = element_text(vjust = +2.5),
+        axis.title.x = element_text(vjust = -0.70),
+        plot.title = element_text(size = 26, face = "bold")) 
+# -------------------
+
+# Calculating Average Number of Steps by Hour of Day
+hourly_steps <-read.csv("hourlySteps_merged.csv")
+
+hourly_steps_summary <- hourly_steps %>%
+  mutate(ActivityHour = mdy_hms(ActivityHour),
+         Hour = hour(ActivityHour)) %>%
+  group_by(Hour) %>%
+  summarise(Average_Steps = mean(StepTotal, na.rm = TRUE))
+
+# Plot 4. Average Number of Steps by Hour of Day
+ggplot(hourly_steps_summary, aes(x = Hour, y = Average_Steps, color = Average_Steps)) +
+  geom_line(size=2.2) +
+  scale_colour_gradient(low = "blue", high = "orange", guide = "none") + # Method 1
+  #scale_colour_gradient2(low = "green", mid = "yellow" , high = "red",guide = "none", # Method 2
+                         #midpoint=median(hourly_steps_summary$Average_Steps))+
+  theme_linedraw()+
+  ggtitle("Average Number of Steps by Hour of Day") +
+  xlab("Hour of Day") + ylab("Average Number of Steps") + 
+  theme_bw() + labs(subtitle="") +
+  theme(plot.margin = margin(0.7,0.8,0.7,0.7, "cm"),
+        axis.text = element_text(size = 20, face = "plain"), 
+        panel.border = element_rect(color = "black",
+                                    fill = NA,
+                                    size = 2),
+        panel.background = element_blank(),
+        axis.text.x = element_text(margin = margin(t = .3, unit = "cm")), 
+        axis.title = element_text(size = 24), 
+        axis.title.y = element_text(vjust = +2.5),
+        axis.title.x = element_text(vjust = -0.70),
+        plot.title = element_text(size = 26, face = "bold")) +
+  scale_x_continuous(labels=c('0','01','02','03','04','05','06','07','08','09',
+                              '10','11','12','13','14','15','16','17','18','19',
+                              '20','21','22','23'), 
+                     breaks=c(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,
+                              21,22,23))+
+  #scale_y_continuous(limits = c(0, 150))+
+  plot(daily_activity$TotalSteps, daily_activity$Calories, pch = 16)+ box(lwd=2) 
+# -------------------
+
+# --- Classification of Participants (by User Type and Sleeper Type) ---
+# Create new df with average activity, grouped by 'Id',
+daily_act2 <- daily_activity %>%
+  group_by(Id) %>%
+  drop_na() %>%
+  summarise(avg_total_steps = mean(TotalSteps),
+            avg_veryact_min = mean(VeryActiveMinutes),
+            avg_seden_min = mean(SedentaryMinutes),
+            avg_calories = mean(Calories))
+
+# Create new df with average sleep (in hours), grouped by the 'Id',
+daily_sleep <- sleep_day %>%
+  group_by(Id) %>%
+  drop_na() %>%
+  summarise(avg_total_sleep = mean(TotalMinutesAsleep)/60)
+
+# Merging "daily_act2" and "daily_sleep" by "Id" and creating a new df: "daily_act_sleep"
+daily_act_sleep <- merge(daily_act2, daily_sleep, by="Id", all = TRUE)
+
+
+# Identifying user type
+user_type <- daily_act_sleep %>% 
+  mutate(user_type = case_when
+         (avg_total_steps < 5000 ~ "Sedentary", avg_total_steps >= 5000 & avg_total_steps < 7499 ~ "Lightly Active", avg_total_steps >= 7500 & avg_total_steps < 9999 ~ "Fairly Active", avg_total_steps >=10000 ~ "Very Active"))
+head(user_type)
+
+# Calculating User type percentile
+Usertype_percentile <- user_type %>% 
+  group_by(user_type) %>%
+  summarise(total = n()) %>% 
+  mutate(totals =sum(total)) %>% 
+  group_by(user_type) %>% 
+  summarise(labels = scales::percent(total/totals))
+Usertype_percentile$user_type <- factor(Usertype_percentile$user_type , 
+                                        labels = c("very active", "fairly active", "lightly active", "sedentary"))
+head(Usertype_percentile)
+
+
+# Plot 5. User Type Percentage Donut Chart
+Usertype_percentile %>% 
+  ggplot(aes(x="",y=labels, fill=user_type)) +
+  geom_bar(stat = "identity", width = 1)+
+  coord_polar("y", start=0)+
+  theme_minimal()+
+  theme(plot.margin = margin(0.5,0.5,0.5,0.5, "cm"),
+        axis.title.x= element_blank(),
+        axis.title.y = element_blank(),
+        #panel.border = element_blank(), 
+        panel.grid = element_blank(), 
+        axis.ticks = element_blank(),
+        axis.text.x = element_blank(),
+        legend.spacing.y = unit(1.6, 'cm'),
+        legend.key = element_rect(color = NA, fill = NA),
+        legend.key.size = unit(1.0, "cm"),
+        legend.title = element_text(hjust = 0.5,vjust = 1.1, size=19, face = "bold"), 
+        legend.text = element_text(size=16, face = "bold"),
+        legend.position = c(1.1, 0.55), 
+        legend.background = element_rect(fill = "white", color = "gray"), 
+        plot.title = element_text(hjust = 0.5,vjust = -0.8, size=26, face = "bold"))+
+  guides(fill = guide_legend(byrow = TRUE))+
+  scale_fill_manual(labels = c("Very Active", "Fairly Active", "Lightly Active", "Sedentary"),
+                    values = c("#0075ab","#79AEC9", "#497894", "#314978")) +
+  #scale_color_manual(labels = c("Very Active", "Fairly Active", "Lightly Active", "Sedentary"),
+                     #values = c("#3EA5D1", "#79AEC9", "#497894", "#314978"))+
+  geom_text(aes(label = labels), size=11, color="white",
+            position = position_stack(vjust = 0.5))+
+  labs(title="User Type Percentage", fill='User Type')
+# ----------
+
+# Create new df and classify Sleeper Type by Hours Asleep
+sleeper_type <- daily_act_sleep %>%
+  mutate(sleeper_type = case_when(
+    avg_total_sleep < 4 ~ "Unhealthy Sleeper",
+    avg_total_sleep >= 4 & avg_total_sleep < 6 ~ "Bad Sleeper", 
+    avg_total_sleep >= 6 & avg_total_sleep < 7 ~ "Normal Sleeper", 
+    avg_total_sleep >= 7 ~ "Good Sleeper"
+  ))
+
+# Percentage of sleeper_type
+sleeper_type_pct <- sleeper_type %>%
+  group_by(sleeper_type) %>%
+  summarise(total = n()) %>%
+  mutate(totals = sum(total)) %>%
+  group_by(sleeper_type) %>%
+  summarise(total_percent = scales::percent(total / totals))
+
+
+# Plot 6. Sleeper type Percentage Donut Chart
+sleeper_type_pct %>%
+  ggplot(aes(x="",y=total_percent, fill=sleeper_type)) +
+  geom_bar(stat = "identity", width = 1)+
+  coord_polar("y", start=0)+
+  theme_minimal()+
+  theme(plot.margin = margin(0.5,0.5,0.5,0.5, "cm"),
+        axis.title.x= element_blank(),
+        axis.title.y = element_blank(),
+        #panel.border = element_blank(), 
+        panel.grid = element_blank(), 
+        axis.ticks = element_blank(),
+        axis.text.x = element_blank(),
+        legend.spacing.y = unit(1.6, 'cm'),
+        legend.key = element_rect(color = NA, fill = NA),
+        legend.key.size = unit(1.0, "cm"),
+        legend.title = element_text(hjust = 0.5,vjust = 1.1, size=19, face = "bold"), 
+        legend.text = element_text(size=16, face = "bold"),
+        legend.position = c(1.15, 0.55), 
+        legend.background = element_rect(fill = "white", color = "gray"), 
+        plot.title = element_text(hjust = 0.5,vjust = -0.8, size=26, face = "bold"))+
+  guides(fill = guide_legend(byrow = TRUE))+
+  scale_fill_manual(values = c("#0075ab","#79AEC9","#314978","#497894"),
+                    labels = c("Good Sleeper", "Normal Sleeper", "Bad Sleeper", "Unhealthy Sleeper")) +
+  geom_text(aes(label = total_percent), size=11, color="white",
+            position = position_stack(vjust = 0.5))+
+  labs(title="Sleeper Type Percentage", fill='Sleeper type')
+
+
+# --- Correlation Analysis ---
+
+# Calculate correlation between Daily Steps and Calories Burned
+cor.test(daily_activity$TotalSteps, daily_activity$Calories)
+
+# Calculate correlation between Very Active Minute and Calories Burned
+cor.test(daily_activity$VeryActiveMinutes, daily_activity$Calories)
+
+# Plot7. Total Daily Steps vs. Calories Burned
+ggplot(daily_activity, aes(x=TotalSteps, y=Calories)) +
+  geom_point(size=4, shape=20)+
+  geom_smooth(method=lm, formula =  y ~ x+ I(x^0.5)+I(x^1),aes(group=1),colour="blue")+
+  stat_cor(method = "pearson", cor.coef.name = "r", vjust = 1, size = 7) +
+  theme_linedraw()+
+  ggtitle("Total Daily Steps vs. Calories Burned") +
+  xlab("Total Daily Steps") + ylab("Calories Burned") + 
+  theme_bw() + labs(subtitle="") +
+  theme(plot.margin = margin(0.7,0.8,0.7,0.7, "cm"),
+        axis.text = element_text(size = 20, face = "plain"), 
+        panel.border = element_rect(color = "black", fill = NA, size = 2),
+        panel.background = element_blank(),
+        axis.text.x = element_text(margin = margin(t = .3, unit = "cm")), 
+        axis.title = element_text(size = 24), 
+        axis.title.y = element_text(vjust = +2.5),
+        axis.title.x = element_text(vjust = -0.70),
+        plot.title = element_text(size = 26, face = "bold")) +
+  scale_x_continuous(limits = c(0, 24000), labels=c('0 K','5 K','10 K','15 K','20 K','25 K'), 
+                     breaks=c(0, 5000, 10000, 15000, 20000, 25000))+
+  scale_y_continuous(labels = scales::label_number(scale = 1e-3, suffix = " K"),
+                     breaks = seq(0, 5000, 1000))+
+  plot(daily_activity$TotalSteps, daily_activity$Calories, pch = 16)+ box(lwd=2)
+
+
+# Plot 8. Very Active Minutes vs. Calories Burned
+ggplot(daily_activity, aes(x=VeryActiveMinutes, y=Calories)) +
+  geom_point(size=4, shape=20)+
+  geom_smooth(method=lm, formula =  y ~ x+ I(x^0.5)+I(x^1),aes(group=1),colour="blue")+
+  stat_cor(method = "pearson", cor.coef.name = "r", vjust = 1, size = 7) +
+  theme_linedraw()+
+  ggtitle("Very Active Minutes vs. Calories Burned") +
+  xlab("Very Active Minutes") + ylab("Calories Burned") + 
+  theme_bw() + labs(subtitle="") +
+  theme(plot.margin = margin(0.7,0.8,0.7,0.7, "cm"),
+        axis.text = element_text(size = 20, face = "plain"), 
+        panel.border = element_rect(color = "black",
+                                    fill = NA,
+                                    size = 2),
+        panel.background = element_blank(),
+        axis.text.x = element_text(margin = margin(t = .3, unit = "cm")), 
+        axis.title = element_text(size = 24), 
+        axis.title.y = element_text(vjust = +2.5),
+        axis.title.x = element_text(vjust = -0.70),
+        plot.title = element_text(size = 26, face = "bold")) +
+  scale_x_continuous(limits = c(0, 140), breaks = seq(0, 150, 25))+
+  scale_y_continuous(labels = scales::label_number(scale = 1e-3, suffix = " K"),
+                     breaks = seq(0, 5000, 1000))+
+  plot(daily_activity$TotalSteps, daily_activity$Calories, pch = 16)+ box(lwd=2) 
+# -------------------
+
+# --- Correlation between Daily Active Minutes and Very Active Distance vs Total Daily Steps ---
+
+# Create new df with daily active minutes
+daily_steps_activity <- daily_activity %>%
+  mutate(TotalActiveMinutes = VeryActiveMinutes+FairlyActiveMinutes+LightlyActiveMinutes)
+
+# Calculate correlation between Total Daily Steps and Daily Active Minutes
+cor.test(daily_steps_activity$TotalSteps, daily_steps_activity$TotalActiveMinutes)
+
+# Calculate correlation between Total Daily Steps and Very Active Distance
+cor.test(daily_activity$TotalSteps, daily_activity$VeryActiveDistance)
+
+
+# Plot 9. Total Daily Steps vs. Daily Activity
+ggplot(data=daily_steps_activity, aes(x=TotalSteps, y=TotalActiveMinutes)) +
+  geom_point(size=4, shape=20)+
+  geom_smooth(method=lm, formula =  y ~ x+ I(x^0.5)+I(x^1),aes(group=1),colour="blue")+
+  stat_cor(method = "pearson", cor.coef.name = "r", vjust = 1, size = 7) +
+  theme_linedraw()+
+  ggtitle("Total Daily Steps vs. Daily Activity") +
+  xlab("Total Daily Steps") + ylab("Total Time Active (Min)") + 
+  theme_bw() + labs(subtitle="") +
+  theme(plot.margin = margin(0.7,0.8,0.7,0.7, "cm"),
+        axis.text = element_text(size = 20, face = "plain"), 
+        panel.border = element_rect(color = "black",
+                                    fill = NA,
+                                    size = 2),
+        panel.background = element_blank(),
+        axis.text.x = element_text(margin = margin(t = .3, unit = "cm")), 
+        axis.title = element_text(size = 24), 
+        axis.title.y = element_text(vjust = +2.5),
+        axis.title.x = element_text(vjust = -0.70),
+        plot.title = element_text(size = 26, face = "bold")) +
+  scale_x_continuous(limits = c(0, 24000), 
+                     labels=c('0 K','5 K','10 K','15 K','20 K','25 K'), 
+                     breaks=c(0, 5000, 10000, 15000, 20000, 25000))+
+  #scale_y_continuous(limits = c(0, 150))+
+  plot(daily_activity$TotalSteps, daily_activity$Calories, pch = 16)+ box(lwd=2) 
+
+
+# Plot 10. Total Daily Steps vs. Very Active Distance
+ggplot(daily_activity, aes(x=TotalSteps, y=VeryActiveDistance)) +
+  geom_point(size=4, shape=20)+
+  geom_smooth(method=lm, formula =  y ~ x+ I(x^0.5)+I(x^1),aes(group=1),colour="blue")+
+  stat_cor(method = "pearson", cor.coef.name = "r", vjust = 1, size = 7) +
+  theme_linedraw()+
+  ggtitle("Total Daily Steps vs. Very Active Distance") +
+  xlab("Total Daily Steps") + ylab("Very Active Distance (km)") + 
+  theme_bw() + labs(subtitle="") +
+  theme(plot.margin = margin(0.7,0.8,0.7,0.7, "cm"),
+        axis.text = element_text(size = 20, face = "plain"), 
+        panel.border = element_rect(color = "black",
+                                    fill = NA,
+                                    size = 2),
+        panel.background = element_blank(),
+        axis.text.x = element_text(margin = margin(t = .3, unit = "cm")), 
+        axis.title = element_text(size = 24), 
+        axis.title.y = element_text(vjust = +2.5),
+        axis.title.x = element_text(vjust = -0.70),
+        plot.title = element_text(size = 26, face = "bold")) +
+  scale_x_continuous(limits = c(0, 23500), 
+                     labels=c('0 K','5 K','10 K','15 K','20 K','25 K'), 
+                     breaks=c(0, 5000, 10000, 15000, 20000, 25000))+
+  scale_y_continuous(limits = c(0, 15))+
+  plot(daily_activity$TotalSteps, daily_activity$Calories, pch = 16)+ box(lwd=2) 
+
+
+
+
+
+
+
